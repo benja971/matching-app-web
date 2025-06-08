@@ -21,29 +21,26 @@
       </div>
 
       <div v-else class="cards-container">
-        <!-- Show only the first card with transition -->
-        <Transition name="card-transition" mode="out-in">
-          <UserCard
-            v-if="currentUser"
-            :key="currentUser.id"
-            :user="currentUser"
-            @swipe="handleSwipe"
-            class="current-card"
-          />
-          <div v-else-if="!isLoading" class="no-card-placeholder">
-            <i class="pi pi-heart-fill empty-icon"></i>
-            <p>No more cards available</p>
-          </div>
-        </Transition>
+        <!-- Show only the current card -->
+        <div class="card-stack">
+          <UserCard v-if="potentialMatches.length > 0" :key="potentialMatches[0].id" :user="potentialMatches[0]"
+            @swipe="handleSwipe" class="current-card" />
+        </div>
+
+        <!-- No cards placeholder -->
+        <div v-if="potentialMatches.length === 0 && !isLoading" class="no-card-placeholder">
+          <i class="pi pi-heart-fill empty-icon"></i>
+          <p>No more cards available</p>
+        </div>
 
         <!-- Loading indicator when fetching more cards -->
-        <div v-if="isLoading && potentialMatches.length > 0" class="loading-overlay">
+        <div v-if="isLoading && potentialMatches.length === 0" class="loading-overlay">
           <ProgressSpinner />
           <p>Loading next match...</p>
         </div>
 
         <!-- Manual load more button (only show if no current card and more available) -->
-        <div v-if="!currentUser && hasMore && !isLoading" class="load-more-section">
+        <div v-if="potentialMatches.length === 0 && hasMore && !isLoading" class="load-more-section">
           <Button label="Load More Matches" @click="loadMore" class="p-button-outlined" />
         </div>
       </div>
@@ -58,13 +55,10 @@ import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 
 const matchStore = useMatchStore()
 const { potentialMatches, isLoading, error, hasMore } = storeToRefs(matchStore)
-
-// Show only the first card in the queue
-const currentUser = computed(() => potentialMatches.value[0] || null)
 
 const fetchMatches = () => {
   matchStore.fetchPotentialMatches(1, true) // Reset and fetch first page
@@ -121,9 +115,16 @@ onMounted(() => {
   justify-content: center;
 }
 
-.current-card {
+.card-stack {
+  position: relative;
   width: 100%;
   max-width: 350px;
+  height: 500px;
+}
+
+.current-card {
+  width: 100%;
+  height: 100%;
 }
 
 .loading-overlay {
@@ -154,22 +155,6 @@ onMounted(() => {
   color: var(--text-color-secondary);
   text-align: center;
   font-style: italic;
-}
-
-/* Card transition effects */
-.card-transition-enter-active,
-.card-transition-leave-active {
-  transition: all 0.3s ease;
-}
-
-.card-transition-enter-from {
-  opacity: 0;
-  transform: translateX(100px) scale(0.8);
-}
-
-.card-transition-leave-to {
-  opacity: 0;
-  transform: translateX(-100px) scale(0.8);
 }
 
 .no-card-placeholder {
